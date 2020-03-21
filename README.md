@@ -2,7 +2,9 @@
 
 ## Assignments
 
-**Pi calculation, nThreads vs time graph**
+### piCalculation
+
+**nThreads vs time graph**
 
 Run script.sh as a normal bash script, in case it can't be executed may a problem of permissions, allow the file to be executed doing:
 
