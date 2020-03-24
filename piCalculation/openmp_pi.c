@@ -6,11 +6,12 @@
 #define ITERATIONS 2e09
 
 void calculatePi(double *piTotal, int ID, int nThreads) {
-    int initIteration, endIteration;
+    long long initIteration, endIteration;
 
-    initIteration = (ITERATIONS/nThreads) * ID;
-    endIteration = initIteration + ((ITERATIONS/nThreads) *(ID + 1));
+    initIteration = ((ITERATIONS/nThreads) * ID);
+    endIteration = ((ITERATIONS/nThreads) *(ID + 1)) -1;
     piTotal[ID] = 0.0;
+    // printf("ID: %d, %lld %lld\n", ID, initIteration, endIteration);
     do{
         piTotal[ID] = piTotal[ID] + (double)(4.0 / ((initIteration*2)+1));
         initIteration++;
@@ -23,7 +24,6 @@ int main(int argc, char *argv[]){
     int i;
     int nThreads = *argv[1]-'0';
     double piTotal[nThreads];
-
 
     // printf("With %d threads, ",nThreads);
 
