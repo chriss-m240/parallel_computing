@@ -23,7 +23,7 @@ struct param_struct {
 
 int kernel_size, nThreads;
 
-double* boxesForGauss(int sigma, int n) {
+void boxesForGauss(int sigma, int n, double *bxs) {
     double wIdeal = sqrt((12*sigma*sigma/n)+1);
     double wl = floor(wIdeal);
 		if(fmod(wl, 2.0) == 0.0)
@@ -32,12 +32,10 @@ double* boxesForGauss(int sigma, int n) {
 
     double mIdeal = (12*sigma*sigma - n*wl*wl - 4*n*wl - 3*n)/(-4*wl - 4);
     double m = round(mIdeal);
-		double *sizes = (double *)malloc(sizeof(double) * 3);;
-		for (int i = 0; i < n; i++) {
-			*(sizes+i) = (i<m?wl:wu);
-		}
 
-		return sizes;
+		for (int i = 0; i < n; i++) {
+			*(bxs+i) = (i<m?wl:wu);
+		}
 }
 
 void boxBlurH(int *scl, int *tcl, int w, int h, int r, int start, int end) {
@@ -77,7 +75,8 @@ void boxBlur(int *scl, int *tcl, int w, int h, int r, int start, int end) {
 void *gaussBlur(void *arg) {
     struct param_struct *data;
 	  data = (struct param_struct *)arg;
-    double *bxs = boxesForGauss(data->r, 3);
+    double *bxs = (double *)malloc(sizeof(double) * 3);
+		boxesForGauss(data->r, 3, bxs);
 
     boxBlur(data->scl, data->tcl, data->w, data->h, (int)((*(bxs)-1)/2), data->start, data->end);
     boxBlur(data->tcl, data->scl, data->w, data->h, (int)((*(bxs+1)-1)/2), data->start, data->end);
