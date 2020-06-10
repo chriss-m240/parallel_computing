@@ -1,0 +1,10 @@
+sudo ssh -i "mpi-master-node.pem" ubuntu@ec2-52-14-179-179.us-east-2.compute.amazonaws.com
+sudo ssh -i "mpi-master-node.pem" ubuntu@ec2-18-224-137-177.us-east-2.compute.amazonaws.com
+sudo ssh -i "mpi-master-node.pem" ubuntu@ec2-18-222-172-54.us-east-2.compute.amazonaws.com
+sudo ssh -i "mpi-master-node.pem" ubuntu@ec2-18-222-56-160.us-east-2.compute.amazonaws.com
+sudo ssh -i "mpi-master-node.pem" ubuntu@ec2-18-219-105-137.us-east-2.compute.amazonaws.com
+sudo ssh -i "mpi-master-node.pem" ubuntu@ec2-3-21-33-95.us-east-2.compute.amazonaws.com
+sudo ssh -i "mpi-master-node.pem" ubuntu@ec2-18-221-183-79.us-east-2.compute.amazonaws.com
+sudo mount -t nfs 172.31.37.26:/home/mpiuser /home/mpiuser
+su mpiuser
+7TvndmamvT
