@@ -107,6 +107,7 @@ void parallelize(int *scl, int *tcl, int w, int h, int r, int processId) {
 		int GLOBAL_ID = (processId * nThreads) + threadId;
 		int ID = omp_get_thread_num();
 		struct param_struct params;
+		printf("processId: %d threadStart: %d threadEnd: %d\n", processId, GLOBAL_ID * dh, (GLOBAL_ID + 1) * dh);
 		params.scl = scl;
 		params.tcl = tcl;
 		params.w = w;
@@ -145,9 +146,10 @@ int main(int argc, char *argv[]){
 	int processStart = processId * dh;
 	int processEnd = ((processId + 1) * dh);
 
+	printf("processStart: %d processEnd %d\n", processStart, processEnd);
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
-			if ( processStart <= i && i < processEnd) {
+			if ( processStart <= i && i < processEnd+10) {
 				*(r_ch+(i*width)+j) = (int)*(img+offset);
 				*(g_ch+(i*width)+j) = (int)*(img+offset+1);
 				*(b_ch+(i*width)+j) = (int)*(img+offset+2);
@@ -155,7 +157,6 @@ int main(int argc, char *argv[]){
 				*(r_ch+(i*width)+j) = 0;
 				*(g_ch+(i*width)+j) = 0;
 				*(b_ch+(i*width)+j) = 0;
-
 			}
 				offset += n_channels;
 		}
@@ -175,21 +176,24 @@ int main(int argc, char *argv[]){
 	offset = 0;
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
+			if ( processStart <= i && i < processEnd) {
 				int_img[offset] = *(r_target_ch + (i*width)+j);
 				int_img[offset+1] = *(g_target_ch + (i*width)+j);
 				int_img[offset+2] = *(b_target_ch + (i*width)+j);
-			offset += n_channels;
+			} else {
+				int_img[offset] = 0;
+				int_img[offset+1] = 0;
+				int_img[offset+2] = 0;
+			}
+				offset += n_channels;
 		}
 	}
 
 	int *int_final_img = (int *)malloc(sizeof(int) * (3*img_size));
 	MPI_Reduce(int_img, int_final_img, (3*img_size), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-	offset = 0;
+	// MPI_Gather(int_img, (3*img_size), MPI_INT, int_final_img, (3*img_size), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
 	if (processId == 0) {
-		offset = 0;
-
-
 		for (int i = 0; i < 3*img_size; i++) {
 			img[i] = int_final_img[i];
 		}
