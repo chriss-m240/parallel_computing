@@ -51,7 +51,7 @@ void boxesForGauss(int sigma, int n, double *bxs) {
 }
 
 void boxBlurH(int *scl, int *tcl, int w, int h, int r, int start, int end) {
-    for(int i=start; i<end; i++)
+    for(int i=start; i<min(h, end); i++)
         for(int j=0; j<w; j++)  {
             int val = 0;
             for(int ix=j-r; ix<j+r+1; ix++) {
@@ -63,7 +63,7 @@ void boxBlurH(int *scl, int *tcl, int w, int h, int r, int start, int end) {
 }
 
 void boxBlurT(int *scl, int *tcl, int w, int h, int r, int start, int end) {
-    for(int i=start; i<end; i++)
+    for(int i=start; i<min(h, end); i++)
         for(int j=0; j<w; j++) {
             int val = 0;
             for(int iy=i-r; iy<i+r+1; iy++) {
@@ -114,7 +114,7 @@ void parallelize(int *scl, int *tcl, int w, int h, int r, int processId) {
 		params.h = h;
 		params.r = r;
 		params.start = GLOBAL_ID * dh;
-		params.end = (GLOBAL_ID + 1) * dh;
+		params.end = ((GLOBAL_ID + 1) * dh) + 10;
 		params.id = ID;
 		params_arr[ID] = params;
 		gaussBlur(&params_arr[ID]);
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]){
 	printf("processStart: %d processEnd %d\n", processStart, processEnd);
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
-			if ( processStart <= i && i < processEnd+10) {
+			if (processStart <= i && i < processEnd+10) {
 				*(r_ch+(i*width)+j) = (int)*(img+offset);
 				*(g_ch+(i*width)+j) = (int)*(img+offset+1);
 				*(b_ch+(i*width)+j) = (int)*(img+offset+2);
@@ -176,7 +176,7 @@ int main(int argc, char *argv[]){
 	offset = 0;
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
-			if ( processStart <= i && i < processEnd) {
+			if (processStart <= i && i < processEnd) {
 				int_img[offset] = *(r_target_ch + (i*width)+j);
 				int_img[offset+1] = *(g_target_ch + (i*width)+j);
 				int_img[offset+2] = *(b_target_ch + (i*width)+j);
