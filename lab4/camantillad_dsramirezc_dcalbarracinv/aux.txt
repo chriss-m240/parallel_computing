@@ -1,0 +1,17 @@
+--------------------------------------------------------------------------
+[[20377,1],2]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: ip-172-31-4-91
+
+Another transport will be used instead, although this may result in
+lower performance.
+
+NOTE: You can disable this warning by setting the MCA parameter
+btl_base_warn_component_unused to 0.
+--------------------------------------------------------------------------
+[ip-172-31-19-94:10327] 5 more processes have sent help message help-mpi-btl-base.txt / btl:no-nics
+[ip-172-31-19-94:10327] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+Command exited with non-zero status 1
+12.29

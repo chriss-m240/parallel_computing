@@ -107,7 +107,7 @@ void parallelize(int *scl, int *tcl, int w, int h, int r, int processId) {
 		int GLOBAL_ID = (processId * (nThreads)) + threadId;
 		int ID = omp_get_thread_num();
 		struct param_struct params;
-		printf("processId: %d threadStart: %d threadEnd: %d pro %d\n", GLOBAL_ID, nThreads, threadId,processId);
+	//	printf("processId: %d threadStart: %d threadEnd: %d pro %d\n", GLOBAL_ID, nThreads, threadId,processId);
 		params.scl = scl;
 		params.tcl = tcl;
 		params.w = w;
@@ -150,14 +150,14 @@ int main(int argc, char *argv[]){
 	kernel_size=atoi(argv[3]);
 	nThreads=atoi(argv[4]);
 
-	if (processId == 0)
-		printf("\nLaunching with %i processes\n", numprocs);
+	//if (processId == 0)
+		//printf("\nLaunching with %i processes\n", numprocs);
 
 	int dh = height/numprocs;
 	int processStart = processId * dh;
 	int processEnd = ((processId + 1) * dh);
 	
-	printf("processStart: %d processEnd %d\n", processStart, processEnd);
+	//printf("processStart: %d processEnd %d\n", processStart, processEnd);
 
 
 
