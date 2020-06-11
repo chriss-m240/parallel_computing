@@ -123,6 +123,10 @@ void parallelize(int *scl, int *tcl, int w, int h, int r, int processId) {
 
 
 int main(int argc, char *argv[]){
+	MPI_Init(&argc, &argv);
+	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+	MPI_Comm_rank(MPI_COMM_WORLD, &processId);
+
 	int width, height, n_channels;
 	unsigned char *img = stbi_load(argv[1], &width, &height, &n_channels, 0);
 
@@ -146,15 +150,9 @@ int main(int argc, char *argv[]){
 	kernel_size=atoi(argv[3]);
 	nThreads=atoi(argv[4]);
 
-	MPI_Init(&argc, &argv);
-	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-	MPI_Comm_rank(MPI_COMM_WORLD, &processId);
-
 	if (processId == 0)
 		printf("\nLaunching with %i processes\n", numprocs);
 
-
-	
 	int dh = height/numprocs;
 	int processStart = processId * dh;
 	int processEnd = ((processId + 1) * dh);
@@ -186,8 +184,9 @@ int main(int argc, char *argv[]){
 	}
 
 	int *int_final_img = (int *)malloc(sizeof(int) * (3*img_size));
+	
+	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Reduce(int_img, int_final_img, (3*img_size), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-	// MPI_Gather(int_img, (3*img_size), MPI_INT, int_final_img, (3*img_size), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
 	if (processId == 0) {
 		for (int i = 0; i < 3*img_size; i++) {
@@ -196,6 +195,7 @@ int main(int argc, char *argv[]){
 
 		stbi_write_jpg(argv[2], width, height, n_channels, img, 50);
 	}
+	
 	free(r_target_ch);
 	free(g_target_ch);
 	free(b_target_ch);
