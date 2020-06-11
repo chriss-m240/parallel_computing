@@ -8,7 +8,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#include <mpi.h>
 #include "omp.h"
+
 int max(int a,int b){
 	if(a>b)
 		return a;
@@ -29,8 +31,9 @@ struct param_struct {
 	int end;
 	int id;
 };
-int kernel_size, nThreads;
 
+int kernel_size, nThreads;
+int numprocs, processId;
 
 void boxesForGauss(int sigma, int n, double *bxs) {
     double wIdeal = sqrt((12*sigma*sigma/n)+1);
@@ -94,12 +97,14 @@ void *gaussBlur(void *arg) {
     return 0;
 }
 
-void parallelize(int *scl, int *tcl, int w, int h, int r) {
-	int dh = h/nThreads;
+void parallelize(int *scl, int *tcl, int w, int h, int r, int processId) {
+	int dh = h/(nThreads*numprocs);
 	struct param_struct params_arr[nThreads];
 
 	#pragma omp parallel num_threads(nThreads)
 	{
+		int threadId = omp_get_thread_num();
+		int GLOBAL_ID = (processId * nThreads) + threadId;
 		int ID = omp_get_thread_num();
 		struct param_struct params;
 		params.scl = scl;
@@ -107,17 +112,26 @@ void parallelize(int *scl, int *tcl, int w, int h, int r) {
 		params.w = w;
 		params.h = h;
 		params.r = r;
-		params.start = ID * dh;
-		params.end = (ID + 1) * dh;
+		params.start = GLOBAL_ID * dh;
+		params.end = (GLOBAL_ID + 1) * dh;
 		params.id = ID;
 		params_arr[ID] = params;
 		gaussBlur(&params_arr[ID]);
 	}
 }
 
+
 int main(int argc, char *argv[]){
 	kernel_size=atoi(argv[3]);
 	nThreads=atoi(argv[4]);
+
+	MPI_Init(&argc, &argv);
+	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+	MPI_Comm_rank(MPI_COMM_WORLD, &processId);
+
+	if (processId == 0)
+		printf("\nLaunching with %i processes\n", numprocs);
+
 	int width, height, n_channels;
 	unsigned char *img = stbi_load(argv[1], &width, &height, &n_channels, 0);
 
@@ -127,12 +141,23 @@ int main(int argc, char *argv[]){
 	int *b_ch = (int *)malloc(sizeof(int) * (img_size));
 
 	int offset = 0;
+	int dh = height/numprocs;
+	int processStart = processId * dh;
+	int processEnd = ((processId + 1) * dh);
+
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
-			*(r_ch+(i*width)+j) = (int)*(img+offset);
-			*(g_ch+(i*width)+j) = (int)*(img+offset+1);
-			*(b_ch+(i*width)+j) = (int)*(img+offset+2);
-			offset += n_channels;
+			if ( processStart <= i && i < processEnd) {
+				*(r_ch+(i*width)+j) = (int)*(img+offset);
+				*(g_ch+(i*width)+j) = (int)*(img+offset+1);
+				*(b_ch+(i*width)+j) = (int)*(img+offset+2);
+			} else {
+				*(r_ch+(i*width)+j) = 0;
+				*(g_ch+(i*width)+j) = 0;
+				*(b_ch+(i*width)+j) = 0;
+
+			}
+				offset += n_channels;
 		}
 	}
 
@@ -140,27 +165,45 @@ int main(int argc, char *argv[]){
 	int *g_target_ch = (int *)malloc(sizeof(int) * (img_size));
 	int *b_target_ch = (int *)malloc(sizeof(int) * (img_size));
 
-	parallelize(r_ch, r_target_ch, width, height, kernel_size);
-	parallelize(g_ch, g_target_ch, width, height, kernel_size);
-	parallelize(b_ch, b_target_ch, width, height, kernel_size);
+	parallelize(r_ch, r_target_ch, width, height, kernel_size, processId);
+	parallelize(g_ch, g_target_ch, width, height, kernel_size, processId);
+	parallelize(b_ch, b_target_ch, width, height, kernel_size, processId);
+
+
+	int *int_img = (int *)malloc(sizeof(int) * (3*img_size));
 
 	offset = 0;
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
-			img[offset] = *(r_target_ch + (i*width)+j);
-			img[offset+1] = *(g_target_ch + (i*width)+j);
-			img[offset+2] = *(b_target_ch + (i*width)+j);
+				int_img[offset] = *(r_target_ch + (i*width)+j);
+				int_img[offset+1] = *(g_target_ch + (i*width)+j);
+				int_img[offset+2] = *(b_target_ch + (i*width)+j);
 			offset += n_channels;
 		}
 	}
 
-	stbi_write_jpg(argv[2], width, height, n_channels, img, 50);
+	int *int_final_img = (int *)malloc(sizeof(int) * (3*img_size));
+	MPI_Reduce(int_img, int_final_img, (3*img_size), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+	offset = 0;
+
+	if (processId == 0) {
+		offset = 0;
+
+
+		for (int i = 0; i < 3*img_size; i++) {
+			img[i] = int_final_img[i];
+		}
+
+		stbi_write_jpg(argv[2], width, height, n_channels, img, 50);
+	}
 	free(r_target_ch);
 	free(g_target_ch);
 	free(b_target_ch);
 	free(r_ch);
 	free(g_ch);
 	free(b_ch);
+
+	MPI_Finalize();
 
 	return 0;
 }
