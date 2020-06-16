@@ -9,10 +9,10 @@ f=open("out.txt","r")
 for k in names:
     for kernel in range(3,16,2):
         for j in range(4):
-                for i in range(3):
+                for i in range(5):
                     s=f.readline().strip().split()
                     d[k][kernel][j]+=float(s[-1])
-                d[k][kernel][j]/=3.0
+                d[k][kernel][j]/=5.0
 ejex=[2**i for i in range(4)]
 for i in range(3,16,2):
     plt.plot(ejex,d[names[0]][i],'-o',label=names[0])
